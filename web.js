@@ -7,9 +7,10 @@ app.get('/', function(request, response) {
 
   
 //    mysting = fs.readFileSync('index.html', 'utf8');
-
+    
+    fs = require("fs");
     var mybuffer = fs.readFileSync("index.html");
-    var mystring = mybuffer.toString('utf8');
+    var mystring = mybuffer.toString("utf8");
     response.send(mytsring);
 
 });
