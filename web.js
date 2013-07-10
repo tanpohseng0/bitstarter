@@ -11,7 +11,7 @@ app.get('/', function(request, response) {
     fs = require("fs");
     var mybuffer = fs.readFileSync("index.html");
     var mystring = mybuffer.toString("utf8");
-    response.send(mytsring);
+    response.send(mystring);
 
 });
 
