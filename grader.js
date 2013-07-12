@@ -21,6 +21,8 @@ References:
    - https://developer.mozilla.org/en-US/docs/JSON#JSON_in_Firefox_2
 */
 
+var sys = require('util');
+
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
@@ -58,20 +60,33 @@ var checkHtmlFile = function(htmlfile, checksfile) {
     return out;
 };
 
-var checkWebPage = function(web_url, checksfile){
-	$ = getWebPage(web_url);
-    var checks = loadChecks(checksfile).sort();
-    var out = {};
-	for(var ii in checks) {
-        var present = $(checks[ii]).length > 0;
-        out[checks[ii]] = present;
-    }
-    return out;
-};
-
-var getWebPage = function(web_url){
-	rest.get(web_url).on('complete', function(){return response});
-	console.log(rest);
+var getResp = function(web_url, checksfile){
+	rest.get(web_url).on('complete', function(result) {
+	
+		 if (result instanceof Error) {
+			sys.puts('Error: ' + result.message);
+			this.retry(5000); // try again after 5 sec
+			}
+		else {
+		
+//			console.log("result is : " + result);
+			/*
+			outfile = "outfile.html";
+			fs.writeFileSync(outfile, result);
+			$ = cheerio.load(fs.readFileSync(outfile));
+			*/
+			
+			$ = cheerio.load(result);
+			var checks = loadChecks(checksfile).sort();
+			var out = {};
+			for(var ii in checks) {
+				var present = $(checks[ii]).length > 0;
+				out[checks[ii]] = present;
+			}
+			var outJson = JSON.stringify(out, null, 4);
+			console.log(outJson);
+		}
+	});
 };
 
 var clone = function(fn) {
@@ -88,30 +103,23 @@ if(require.main == module) {
         .parse(process.argv);
 		
 		if(process.argv.indexOf('--file') >= 0)	{
-		
-			console.log(program.file);
-			console.log(program.checks);
-			console.log(program.args);
-			
+					
 			var checkJson = checkHtmlFile(program.file, program.checks);
 			var outJson = JSON.stringify(checkJson, null, 4);
+			console.log(outJson);
 		}
 		else if (process.argv.indexOf('--url') >= 0){
 		
-			web_url = program.url;		
-			console.log("Web url: " + web_url);
-						
-			var checkJson = checkWebPage(program.url, program.checks);
-			
-			var outJson = JSON.stringify(checkJson, null, 4);
-		
+			web_url = program.url.toString();		
+			getResp(web_url, program.checks);	
 		}
 		else {
 			var checkJson = checkHtmlFile(program.file, program.checks);
 			var outJson = JSON.stringify(checkJson, null, 4);
+			console.log(outJson);
 		}
 		
-    console.log(outJson);
+   
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
